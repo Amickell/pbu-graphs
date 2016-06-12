@@ -1,47 +1,30 @@
-
 from math import ceil
-import networkx as nx
+#import networkx as nx
+import shortest_path as sp
 
-class Graph:
-	def __init__(self):
-		self.nodes = []
-		self.num_nodes = 0
-		self.num_edges = 0
-	def add_node(self,location):
-		self.nodes.append(Node())
-		self.num_nodes += 1
-		self.nodes[-1].location = location
-		return (self.num_nodes - 1) #returns node id that was added
-	def add_edge(self,node,end,weight):
-		self.num_edges += 1
-		self.nodes[node].children.append({'end'      : end,
-			                               'weight' : weight})
-
-
-class Node:
-	def __init__(self):
-		self.location = 0
-		self.children = [] 
-		self.distance = 0
-		self.parent = -1 #-1 means not visited
-
+import graph
 
 def path_weight(Graph,path):
 	weight = 0
 	for i in range(0,len(path)-1):
 		#print('path_weight edges ',Graph.edges(data=True))
 		#print('path weight indeces ',path[i],path[i+1])
-		weight += Graph.get_edge_data(path[i],path[i+1])['weight']
+		#weight += Graph.get_edge_data(path[i],path[i+1])['weight']
+		# ind = Graph.nodes[path[i]].children.index(path[i+1])
+		# weight += Graph.nodes[path[i]].children[ind]['weight']
+		weight += Graph.get_edge(path[i],path[i+1])[2]
 	return weight
 
 
+
 def Shortest_Path(Graph,k,start,end):
-	try:
-		paths = [nx.dijkstra_path(Graph,start,end,'weight')]
-	except nx.exception.NetworkXNoPath:
+
+	#paths = [nx.dijkstra_path(Graph,start,end,'weight')]
+	paths = [sp.Shortest_Path(Graph,start,end)]
+	if not paths[0]:
+		print('no path to end')
 		return
 	B = []
-	backupG = Graph.copy()
 	for i in range(1,k):
 		#print('i ',i)
 		for spurNode in paths[i-1][0:-1]: #don't include end node
@@ -61,35 +44,33 @@ def Shortest_Path(Graph,k,start,end):
 						#edges = [(p(x),p(x+1)) for x in range(0,len(p)-1)]
 						#Graph.remove_edges_from(edges)
 						if(Graph.has_edge(p[spurNodeInd],p[spurNodeInd+1])): #if edge wasn't already removed
-							edge_to_remove = (p[spurNodeInd],p[spurNodeInd+1],{'weight': Graph.get_edge_data(p[spurNodeInd],p[spurNodeInd+1])['weight']})
+							edge_to_remove = Graph.get_edge(p[spurNodeInd],p[spurNodeInd+1])
 							#print('edge to remove ',edge_to_remove)
-							edges_removed.append(edge_to_remove)
+							if(edges_removed.count(edge_to_remove) == 0):
+								edges_removed.append(edge_to_remove)
 							#print('edges removed temp1 ',edges_removed)
 
 							#Graph.remove_edge(p[spurNodeInd],p[spurNodeInd+1]) #remove edge from spur that was on previous path
 			#print(Graph.nodes())
 			for n in rootPath[0:-1]: #all nodes in root path except spur node
 				#print('n ',n)
-				edges = Graph.edges(data=True)
+				edges = Graph.edges()
 				edges_to_remove = [x for x in edges if (x[0] == n or x[1] == n)]
 				#print('edges ',edges_to_remove)
-				edges_removed = edges_removed +  edges_to_remove
+				if(edges_removed.count(edge_to_remove) == 0):
+					edges_removed = edges_removed +  edges_to_remove
 				#print('edges removed temp2 ',edges_removed)
 				nodes_removed.append(n)
 				#Graph.remove_node(n) #remove node, so that it isn't visited again, which would create a loop
-			
 			Graph.remove_edges_from(edges_removed)
-			Graph.remove_nodes_from(nodes_removed)
+			#Graph.remove_nodes_from(nodes_removed)
 
-			try:
-				spurPath = nx.dijkstra_path(Graph,spurNode,end,'weight')
-			except nx.exception.NetworkXNoPath:
-				#print('no path, continuing')
-				Graph.add_nodes_from(nodes_removed)
-				Graph.add_edges_from(edges_removed)
-				continue;
+			#spurPath = nx.dijkstra_path(Graph,spurNode,end,'weight')
+			spurPath = sp.Shortest_Path(Graph,spurNode,end)
+			if not spurPath:
+				continue #no path found
 			#print('edges removed ',edges_removed,' nodes removed ',nodes_removed)
-			Graph.add_nodes_from(nodes_removed)
+			#Graph.add_nodes_from(nodes_removed)
 			Graph.add_edges_from(edges_removed)
 			totalPath = rootPath[0:-1] + spurPath
 			#print('totalPath, ',totalPath)
@@ -114,7 +95,7 @@ def Shortest_Path(Graph,k,start,end):
 
 
 def make_graph(num_nodes,edges):
-	G = Graph()
+	G = graph.Graph()
 	G.num_nodes = num_nodes
 	G.num_edges = len(edges)
 	for i in range(0,G.num_nodes):

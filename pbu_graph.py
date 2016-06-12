@@ -1,6 +1,5 @@
 from math import sqrt
-import shortest_path_yen as ksp
-
+import graph
 
 class location:
 	def __init__(self,x,y):
@@ -18,7 +17,7 @@ def find_actual_dist(start,end):
 class work_graph:
 	
 	def __init__(self,work_loc):
-		self.G = ksp.Graph()
+		self.G = graph.Graph()
 		self.work_loc = work_loc
 		self.work_id = self.G.add_node(work_loc)
 
@@ -33,7 +32,7 @@ class work_graph:
 		self_dist_direct = find_actual_dist(location,self.work_loc)
 		self.G.add_edge(new_id,self.work_id,self_dist_direct) 
 		for n in range(1,len(self.G.nodes)-1): #don't include the node we just added or work
-			candidate_dist_direct = self.G.nodes[n].children[0]['weight']
+			candidate_dist_direct = self.G.nodes[n].children['weight'][0]
 
 			self_to_candidate_dist = find_linear_dist(location,self.G.nodes[n].location)
 
